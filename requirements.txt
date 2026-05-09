@@ -1,0 +1,46 @@
+# Data Processing & Analysis
+pandas==2.2.0
+numpy==1.26.4
+scikit-learn==1.4.1
+
+# Machine Learning
+tensorflow==2.16.1
+torch==2.2.1
+xgboost==2.0.3
+
+# Database & Caching
+redis==5.0.1
+pymongo==4.6.1
+psycopg2-binary==2.9.9
+
+# API & Web Framework
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.3
+
+# Search & Similarity
+faiss-cpu==1.7.4
+annoy==1.17.3
+
+# Workflow Orchestration
+apache-airflow==2.8.0
+
+# Data Validation
+great-expectations==0.18.12
+
+# Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+tqdm==4.66.1
+
+# Logging & Monitoring
+python-logging-loki==0.3.2
+
+# Development
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0

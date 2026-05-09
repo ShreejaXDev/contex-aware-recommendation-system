@@ -1,0 +1,75 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Data
+data/raw/
+data/processed/
+*.csv
+*.parquet
+*.pkl
+*.pickle
+
+# Models
+models/*.h5
+models/*.pkl
+models/*.pt
+models/*.joblib
+
+# Logs
+logs/
+*.log
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Airflow
+airflow/logs/
+airflow/dags/__pycache__/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache
+*.cache
+redis_dump.rdb
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
