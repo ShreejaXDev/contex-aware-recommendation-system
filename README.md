@@ -113,29 +113,3 @@ MIT License
 
 For questions or support, please open an issue or contact the development team.
 
-# Context-Aware Neural Recommendation Engine
-
-## Overview
-This project is an AI-powered recommendation system that provides personalized recommendations based on user behavior and contextual data.
-
-## Technologies Used
-- Python
-- TensorFlow Recommenders
-- FastAPI
-- Redis
-- Apache Spark
-- Apache Airflow
-
-## Features
-- Personalized Recommendations
-- Real-time API
-- Data Processing with Spark
-- Caching using Redis
-- Workflow Automation using Airflow
-
-
-
-## Future Improvements
-- Better recommendation accuracy
-- Cloud deployment
-- Real-time analytics
