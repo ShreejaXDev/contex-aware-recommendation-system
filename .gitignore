@@ -73,3 +73,8 @@ redis_dump.rdb
 
 # Windows
 Thumbs.db
+data/raw/
+data/processed/*.csv
+saved_models/
+venv/
+__pycache__/
