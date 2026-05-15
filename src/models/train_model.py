@@ -34,6 +34,7 @@ PHASE  : Core Deep Learning — Two-Tower Retrieval
 
 import os
 import argparse
+import json
 import warnings
 from datetime import datetime
 from pathlib import Path
@@ -62,7 +63,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 DEFAULT_CONFIG = {
     # Data paths
     "data_dir"          : os.path.join("data", "processed"),
-    "model_save_dir"    : os.path.join("models", "saved"),
+    "model_save_dir"    : os.path.join("saved_models"),
 
     # Column names (update if your CSVs use different names)
     "user_id_col"       : "user_id",
@@ -368,7 +369,9 @@ def save_model(model: tf.keras.Model, config: dict) -> str:
     Save the trained model weights to disk.
 
     We save only the sub-models (query_tower and candidate_tower)
-    because they are the components used at inference time.
+    because inference reuses the learned embeddings, not the training loop.
+    The architecture tells TensorFlow how the model is wired.
+    The weights are the learned parameters that make the model useful.
 
     Args:
         model  : Trained TwoTowerRetrievalModel
@@ -377,19 +380,40 @@ def save_model(model: tf.keras.Model, config: dict) -> str:
     Returns:
         str: Path to the saved model directory.
     """
-    timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
-    save_dir   = Path(config["model_save_dir"]) / f"two_tower_{timestamp}"
+    save_dir = Path(config["model_save_dir"])
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save query tower (needed at serving time for user embeddings)
-    query_path = save_dir / "query_tower"
-    model.query_tower.save_weights(str(query_path / "weights"))
+    # Save the architecture settings used for this training run.
+    # Inference can read this file to rebuild the same tower shape before
+    # loading weights, which avoids mismatches between training and serving.
+    model_config_path = save_dir / "model_config.json"
+    with model_config_path.open("w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "embedding_dim": config["embedding_dim"],
+                "use_dense_layers": config["use_dense_layers"],
+                "dense_units": config["dense_units"],
+                "user_id_col": config["user_id_col"],
+                "item_id_col": config["item_id_col"],
+            },
+            f,
+            indent=2,
+        )
 
-    # Save candidate tower (needed to pre-compute item embeddings)
-    candidate_path = save_dir / "candidate_tower"
-    model.candidate_tower.save_weights(str(candidate_path / "weights"))
+    # Save the trained query tower weights.
+    # This preserves the learned user embeddings for later inference.
+    query_path = save_dir / "query_tower.weights.h5"
+    model.query_tower.save_weights(str(query_path))
 
-    print(f"💾 Model saved to: {save_dir}")
+    # Save the trained candidate tower weights.
+    # This preserves the learned item embeddings used to rank products.
+    candidate_path = save_dir / "candidate_tower.weights.h5"
+    model.candidate_tower.save_weights(str(candidate_path))
+
+    print("💾 Trained weights saved:")
+    print(f"   Model config   : {model_config_path}")
+    print(f"   Query tower    : {query_path}")
+    print(f"   Candidate tower: {candidate_path}")
     return str(save_dir)
 
 

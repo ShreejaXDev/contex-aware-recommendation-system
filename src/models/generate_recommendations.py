@@ -36,6 +36,7 @@ PHASE  : Core Deep Learning — Two-Tower Retrieval
 
 import os
 import argparse
+import json
 import warnings
 from pathlib import Path
 
@@ -268,6 +269,45 @@ def load_article_metadata(data_dir: Path) -> pd.DataFrame:
     articles_df["article_id"] = articles_df["article_id"].astype(str)
     return articles_df
 
+def load_trained_towers(
+    query_tower,
+    candidate_tower,
+    saved_models_dir: Path,
+) -> None:
+    """
+    Load trained weights into freshly built tower architectures.
+
+    Inference does not re-train the model. It reuses the learned weights that
+    were saved after training so the embeddings reflect real user/item signals
+    instead of random initialization.
+    """
+    query_weights_path = saved_models_dir / "query_tower.weights.h5"
+    candidate_weights_path = saved_models_dir / "candidate_tower.weights.h5"
+
+    missing_files = [
+        str(path)
+        for path in [query_weights_path, candidate_weights_path]
+        if not path.exists()
+    ]
+
+    if missing_files:
+        raise FileNotFoundError(
+            "Trained model weights not found.\n"
+            f"Missing files: {missing_files}\n"
+            "Run 'python src/models/train_model.py' first to save learned weights into saved_models/."
+        )
+
+    # Keras models need to be built before variables can be restored.
+    # A single dummy forward pass creates the embedding weights with the
+    # same shapes used during training.
+    query_tower(tf.constant([query_tower.user_lookup.get_vocabulary()[0]]))
+    candidate_tower(tf.constant([candidate_tower.item_lookup.get_vocabulary()[0]]))
+
+    query_tower.load_weights(str(query_weights_path))
+    candidate_tower.load_weights(str(candidate_weights_path))
+
+    print("   ✅ Loaded trained weights from saved_models/")
+
 
 def build_readable_recommendations(
     recs_df: pd.DataFrame,
@@ -315,6 +355,25 @@ def build_readable_recommendations(
     readable_df = readable_df.fillna("Unknown")
 
     return readable_df
+
+
+def load_model_config(saved_models_dir: Path) -> dict:
+    """
+    Load the architecture settings saved during training.
+
+    This keeps inference aligned with training even if the embedding size or
+    optional dense layers were changed in a past experiment.
+    """
+    config_path = saved_models_dir / "model_config.json"
+    if not config_path.exists():
+        return {
+            "embedding_dim": 32,
+            "use_dense_layers": False,
+            "dense_units": [],
+        }
+
+    with config_path.open("r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -393,6 +452,8 @@ def main():
 
     # ── Load data ─────────────────────────────────────────────────
     data_dir = Path(args.data_dir)
+    saved_models_dir = Path("saved_models")
+    model_config = load_model_config(saved_models_dir)
     uid_col  = args.user_id_col
     iid_col  = args.item_id_col
 
@@ -442,10 +503,10 @@ def main():
 
     print(f"   ✅ {len(all_user_ids):,} users | {len(all_item_ids):,} items")
 
-    # ── Build towers (with trained weights in real deployment) ────
-    # NOTE: In production, you would LOAD saved weights here:
-    #   query_tower.load_weights(model_save_dir / "query_tower" / "weights")
-    # For this demo, we initialize fresh (untrained) towers.
+    # ── Build towers and load trained weights ─────────────────────
+    # The architecture is created first, then the learned weights are
+    # loaded from disk. This is what turns a model definition into a
+    # real inference model that uses trained embeddings.
     print("\n🏗️  Initializing model towers...")
 
     query_tower = build_query_tower(
@@ -455,6 +516,16 @@ def main():
     candidate_tower = build_candidate_tower(
         item_ids=all_item_ids,
         embedding_dim=args.embedding_dim,
+    )
+
+    # Load the trained weights before generating any recommendations.
+    # Without this step, the towers would use random initialization and the
+    # output recommendations would not reflect what the model learned.
+    saved_models_dir = Path("saved_models")
+    load_trained_towers(
+        query_tower=query_tower,
+        candidate_tower=candidate_tower,
+        saved_models_dir=saved_models_dir,
     )
 
     # ── Build retrieval index ─────────────────────────────────────
