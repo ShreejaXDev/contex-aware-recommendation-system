@@ -133,11 +133,7 @@ This project is an AI-powered recommendation system that provides personalized r
 - Caching using Redis
 - Workflow Automation using Airflow
 
-## Project Structure
-Explain folders here.
 
-## Installation
-Steps to run project.
 
 ## Future Improvements
 - Better recommendation accuracy
