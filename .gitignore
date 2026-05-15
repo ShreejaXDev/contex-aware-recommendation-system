@@ -78,3 +78,4 @@ data/processed/*.csv
 saved_models/
 venv/
 __pycache__
+.streamlit/

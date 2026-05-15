@@ -203,3 +203,7 @@ def build_retrieval_model(
         items_dataset=items_dataset,
         name="two_tower_retrieval_model",
     )
+
+
+# Backward-compatible alias used by the API entrypoint.
+RetrievalModel = TwoTowerRetrievalModel
