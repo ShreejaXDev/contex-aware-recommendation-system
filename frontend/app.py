@@ -90,7 +90,7 @@ with st.sidebar:
 # -----------------------------
 st.markdown("<div class='hero'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🤖 AI-Powered Fashion Recommendation Engine</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>A premium demo showcasing a context-aware two-tower recommender — internship-ready UI</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>A premium demo showcasing a context-aware two-tower recommender </div>", unsafe_allow_html=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
@@ -233,4 +233,4 @@ if generate:
 
 # Footer / credits
 st.markdown("---")
-st.markdown("Built with ❤️ — Two-Tower Retrieval · FastAPI · Streamlit")
+st.markdown("Built with  — Two-Tower Retrieval · FastAPI · Streamlit")
