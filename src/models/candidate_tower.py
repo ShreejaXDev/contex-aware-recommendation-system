@@ -8,10 +8,9 @@ WHAT IS THE CANDIDATE TOWER?
     It converts an item ID into a fixed-size embedding vector that
     represents the item's characteristics.
 
-    These item embeddings are pre-computed offline and stored in an
-    index (e.g., FAISS, ScaNN, or BruteForce for small catalogs).
-    At inference time, we compare a user embedding against all stored
-    item embeddings to find the best matches.
+    These item embeddings are pre-computed offline and stored in a
+    retrieval index. At inference time, we compare a user embedding
+    against all stored item embeddings to find the best matches.
 
 ARCHITECTURE:
     item_id (string)

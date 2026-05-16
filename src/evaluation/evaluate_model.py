@@ -300,7 +300,7 @@ def ndcg_at_k(recommended: list[str], relevant: set[str], k: int) -> float:
 def build_relevant_items_map(
     interaction_df: pd.DataFrame,
     user_id_col: str,
-    item_id_col: str,
+    item_id_col: str, 
     users: list[str],
 ) -> dict:
     """

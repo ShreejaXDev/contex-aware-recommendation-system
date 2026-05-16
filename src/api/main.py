@@ -109,7 +109,7 @@ class HealthResponse(BaseModel):
 class AppState:
     """Holds all resources that are expensive to load."""
     model: Optional[RetrievalModel] = None           # The full Two-Tower model
-    retrieval_index = None                            # ScaNN/brute-force lookup index
+    retrieval_index = None                            # BruteForce lookup index
     articles_df: Optional[pd.DataFrame] = None       # Product metadata
     user_ids: Optional[list] = None                  # Known user IDs from training
 
@@ -266,7 +266,7 @@ async def lifespan(app: FastAPI):
     logger.info("Loaded trained query and candidate tower weights")
 
     # ------------------------------------------------------------------
-    # Step 5: Build the retrieval index
+    # Step 5: Build the retrieval index (BruteForce)
     # ------------------------------------------------------------------
     # TFRS BruteForce index pre-computes all candidate embeddings so
     # recommendation lookups are fast at inference time.

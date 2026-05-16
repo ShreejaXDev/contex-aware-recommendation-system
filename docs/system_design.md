@@ -12,7 +12,7 @@ Two-Tower Recommendation Model
 ↓
 Embedding Generation
 ↓
-ANN Retrieval
+BruteForce Retrieval
 ↓
 Redis Feature Store
 ↓
@@ -40,7 +40,7 @@ Personalized Product Recommendations
 - User & Item embeddings
 
 ### 4. Retrieval System
-- ANN search using FAISS
+- BruteForce search using TensorFlow Recommenders
 - Fast candidate retrieval
 
 ### 5. Backend API

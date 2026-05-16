@@ -162,7 +162,7 @@ The engineered features will later be integrated with:
 - TensorFlow Recommenders (TFRS)
 - Two-Tower Neural Network
 - Redis Feature Store
-- ANN Retrieval System
+- BruteForce Retrieval System
 - FastAPI Recommendation API
 
 ---

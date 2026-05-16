@@ -35,6 +35,7 @@ PHASE  : Core Deep Learning — Two-Tower Retrieval
 """
 
 import os
+import sys
 import argparse
 import json
 import warnings
@@ -45,6 +46,9 @@ import tensorflow as tf
 import tensorflow_recommenders as tfrs
 
 # Import our custom modules
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(PROJECT_ROOT))
+
 from query_tower     import build_query_tower
 from candidate_tower import build_candidate_tower
 
@@ -64,14 +68,6 @@ class RetrievalIndex:
     - Pre-computes all item embeddings once (offline)
     - At query time: computes user embedding, scores against ALL items
     - Returns Top-K items by highest dot-product score
-
-    For large catalogs (millions of items), replace BruteForce with:
-    - ScaNN  (Google's Scalable Nearest Neighbor)
-    - FAISS  (Meta's similarity search library)
-    - Annoy  (Spotify's Approximate Nearest Neighbors)
-
-    These use Approximate Nearest Neighbor (ANN) algorithms that
-    trade a tiny bit of accuracy for massive speed improvements.
 
     Args:
         query_tower     : Trained QueryTower instance
@@ -93,8 +89,6 @@ class RetrievalIndex:
         self.candidate_tower = candidate_tower
         self.item_ids        = item_ids
         self.top_k           = top_k
-
-        # Build the retrieval index
         self._index = self._build_index(item_ids, batch_size, top_k)
 
     def _build_index(

@@ -1,12 +1,12 @@
 # Context-Aware Recommendation System
 
 
-A production-grade machine learning recommendation system that leverages context-aware algorithms, approximate nearest neighbor search, and Redis caching for efficient real-time recommendations.
+A production-grade machine learning recommendation system that leverages context-aware algorithms and Redis caching for efficient real-time recommendations.
 
 ## Features
 
 - **Context-Aware Recommendations**: Generates recommendations based on user context and item features
-- **Approximate Nearest Neighbor (ANN) Search**: Fast similarity search using FAISS/Annoy
+- **BruteForce Retrieval**: TensorFlow Recommenders BruteForce top-k retrieval
 - **Redis Caching**: High-performance caching for frequently accessed recommendations
 - **REST API**: FastAPI-based API for serving recommendations
 - **Apache Airflow**: Orchestrated data pipelines for model training and evaluation
@@ -28,7 +28,6 @@ context-aware-recommendation-system/
 │   ├── evaluation/       # Model evaluation metrics
 │   ├── api/             # FastAPI application
 │   ├── redis_cache/     # Redis caching utilities
-│   └── ann_search/      # ANN search implementations
 ├── models/              # Trained model artifacts
 ├── airflow/             # Airflow DAG definitions
 ├── tests/               # Unit and integration tests
