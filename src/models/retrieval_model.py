@@ -208,3 +208,4 @@ def build_retrieval_model(
 
 # Backward-compatible alias used by the API entrypoint.
 RetrievalModel = TwoTowerRetrievalModel
+
