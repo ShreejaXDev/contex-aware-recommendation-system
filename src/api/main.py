@@ -68,6 +68,7 @@ def resolve_first_existing_path(base_dir: Path, candidates: list[str]) -> Path:
     )
 
 
+
 # ============================================================
 # SECTION 1 — PYDANTIC RESPONSE MODELS
 # ============================================================
