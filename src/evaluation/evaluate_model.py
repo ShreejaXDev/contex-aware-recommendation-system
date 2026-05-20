@@ -296,7 +296,6 @@ def ndcg_at_k(recommended: list[str], relevant: set[str], k: int) -> float:
 
     return dcg / idcg if idcg > 0 else 0.0
 
-
 def build_relevant_items_map(
     interaction_df: pd.DataFrame,
     user_id_col: str,
