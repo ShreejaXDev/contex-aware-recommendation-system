@@ -15,26 +15,29 @@ A production-grade machine learning recommendation system that leverages context
 ## Project Structure
 
 ```
-context-aware-recommendation-system/
+contex-aware-recommendation-system/
+├── airflow/                 # Airflow DAG definitions
 ├── data/
-│   ├── raw/              # Raw input data
-│   ├── processed/        # Processed/cleaned data
-│   └── sample/           # Sample data for testing
-├── notebooks/            # Jupyter notebooks for exploration
+│   ├── raw/                  # Raw input data
+│   ├── processed/            # Processed/cleaned data
+│   └── sample/               # Sample data for testing
+├── docs/                     # Architecture and design docs
+│   └── tests/                # Test documentation
+├── frontend/                 # Frontend app
+├── notebooks/                # Jupyter notebooks for exploration
+├── saved_models/             # Saved model weights and configs
 ├── src/
-│   ├── preprocessing/    # Data preprocessing modules
+│   ├── api/                  # FastAPI application
+│   ├── evaluation/           # Model evaluation scripts
 │   ├── feature_engineering/  # Feature extraction and engineering
-│   ├── training/         # Model training scripts
-│   ├── evaluation/       # Model evaluation metrics
-│   ├── api/             # FastAPI application
-│   ├── redis_cache/     # Redis caching utilities
-├── models/              # Trained model artifacts
-├── airflow/             # Airflow DAG definitions
-├── tests/               # Unit and integration tests
-├── requirements.txt     # Python dependencies
-├── README.md           # This file
-├── .gitignore          # Git ignore rules
-└── main.py             # Application entry point
+│   ├── models/               # Model definitions and inference
+│   ├── preprocessing/        # Data preprocessing modules
+│   ├── redis_cache/          # Redis caching utilities
+│   └── training/             # Model training scripts
+├── tests/                    # Unit and integration tests
+├── requirements.txt          # Python dependencies
+├── README.md                 # This file
+└── main.py                   # Application entry point
 ```
 
 ## Installation
