@@ -133,6 +133,7 @@ class RetrievalIndex:
 
         print(f"✅ Retrieval index built ({len(item_ids):,} items indexed)")
         return index
+    
 
     def recommend(self, user_id: str, top_k: int = None) -> pd.DataFrame:
         """
