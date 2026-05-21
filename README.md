@@ -173,9 +173,7 @@ Configuration is managed through environment variables. See `.env.example` for d
 - `GET /health` - Health check
 - `POST /cache/clear` - Clear recommendation cache
 
-## Contributors
 
-List of project contributors
 
 ## License
 
