@@ -73,14 +73,84 @@ cp .env.example .env
 # Edit .env with your configuration
 ```
 
+## End-to-End Setup (From Clone to Working Project)
+
+1. Clone the repository and enter the folder:
+```bash
+git clone <repository-url>
+cd contex-aware-recommendation-system
+```
+
+2. Create and activate a virtual environment:
+```bash
+python -m venv venv
+venv\Scripts\Activate.ps1  # Windows
+source venv/bin/activate   # Linux/Mac
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Download the dataset and place raw files under:
+```
+data/raw/
+```
+Expected raw files include (example):
+- articles.csv
+- customers.csv
+- transactions_train.csv
+
+5. Run preprocessing to create cleaned files under:
+```
+data/processed/
+```
+You can use the scripts in `src/preprocessing/` to generate:
+- articles_cleaned.csv
+- customers_cleaned.csv
+- transactions_cleaned.csv
+
+6. Run feature engineering to create feature files under:
+```
+data/processed/
+```
+Use scripts in `src/feature_engineering/` to produce:
+- interaction_features.csv
+- item_features.csv
+- user_features.csv
+
+7. Train the model (details below). The trained weights and configs are saved in:
+```
+saved_models/
+```
+
 ## Usage
 
-### Run the API Server
+### Run the API Server (Backend)
 ```bash
-python main.py
+uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 The API will be available at `http://localhost:8000`
+
+### Run the Frontend (Streamlit)
+```bash
+streamlit run frontend/app.py
+```
+
+The Streamlit app will be available at `http://localhost:8501`
+
+### Train the Model
+```bash
+python src/models/train_model.py
+```
+
+### Generate Recommendations (Training-Level Inference)
+Use this if you want to generate recommendation outputs after training:
+```bash
+python src/models/generate_recommendations.py
+```
 
 ### Run Data Pipeline
 ```bash
