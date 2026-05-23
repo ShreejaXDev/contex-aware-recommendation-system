@@ -235,3 +235,4 @@ if generate:
 # Footer / credits
 st.markdown("---")
 st.markdown("Built with  — Two-Tower Retrieval · FastAPI · Streamlit")
+
