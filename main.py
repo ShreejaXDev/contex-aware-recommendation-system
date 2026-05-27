@@ -4,7 +4,6 @@ Context-Aware Recommendation System - Main Entry Point
 This module initializes and runs the FastAPI application for serving
 context-aware recommendations.
 """
-
 import os
 import sys
 from dotenv import load_dotenv
