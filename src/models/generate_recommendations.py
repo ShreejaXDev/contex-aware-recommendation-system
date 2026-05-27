@@ -216,8 +216,6 @@ class RetrievalIndex:
         print(f"✅ Done! Generated {len(result_df):,} recommendations.")
 
         return result_df
-
-
 # ─────────────────────────────────────────────────────────────────────
 # DISPLAY UTILITIES
 # ─────────────────────────────────────────────────────────────────────
