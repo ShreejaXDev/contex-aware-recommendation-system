@@ -20,6 +20,7 @@ import os
 import sys
 import logging
 import json
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Optional
@@ -40,6 +41,7 @@ from src.models.query_tower import QueryTower
 from src.models.candidate_tower import CandidateTower
 from src.models.retrieval_model import RetrievalModel
 from src.retrieval.faiss_index import FaissRetrievalIndex
+from src.api.redis_cache import get_cached_recommendations, set_cached_recommendations
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -392,6 +394,18 @@ def recommend(user_id: str, top_k: int = 10):
         )
 
     # ------------------------------------------------------------------
+    # CACHE: return cached recommendations when available
+    # ------------------------------------------------------------------
+    request_start = time.perf_counter()
+    cached_payload = get_cached_recommendations(user_id, top_k)
+    if cached_payload:
+        elapsed = time.perf_counter() - request_start
+        logger.info(f"CACHE HIT for user '{user_id}' (top_k={top_k}) in {elapsed:.4f} sec")
+        return RecommendationResponse(**cached_payload)
+
+    logger.info(f"CACHE MISS for user '{user_id}' (top_k={top_k})")
+
+    # ------------------------------------------------------------------
     # INFERENCE: run the retrieval index to get top-K product IDs
     # ------------------------------------------------------------------
     # This is the core of the recommendation pipeline:
@@ -455,11 +469,23 @@ def recommend(user_id: str, top_k: int = 10):
             )
         recommendations.append(item)
 
-    return RecommendationResponse(
+    response_payload = {
+        "user_id": user_id,
+        "total_recommendations": len(recommendations),
+        "recommendations": [item.model_dump() for item in recommendations],
+    }
+
+    set_cached_recommendations(
         user_id=user_id,
-        total_recommendations=len(recommendations),
-        recommendations=recommendations,
+        top_k=top_k,
+        payload=response_payload,
+        ttl_seconds=3600,
     )
+
+    elapsed = time.perf_counter() - request_start
+    logger.info(f"CACHE STORE for user '{user_id}' (top_k={top_k}) in {elapsed:.4f} sec")
+
+    return RecommendationResponse(**response_payload)
 
 
 # ============================================================

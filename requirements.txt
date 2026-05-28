@@ -12,6 +12,7 @@ xgboost==2.0.3
 
 # Database & Caching
 redis==5.0.1
+fakeredis==2.23.2
 pymongo==4.6.1
 psycopg2-binary==2.9.9
 
