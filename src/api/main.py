@@ -27,7 +27,6 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import tensorflow_recommenders as tfrs
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -40,6 +39,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from src.models.query_tower import QueryTower
 from src.models.candidate_tower import CandidateTower
 from src.models.retrieval_model import RetrievalModel
+from src.retrieval.faiss_index import FaissRetrievalIndex
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -110,7 +110,7 @@ class HealthResponse(BaseModel):
 class AppState:
     """Holds all resources that are expensive to load."""
     model: Optional[RetrievalModel] = None           # The full Two-Tower model
-    retrieval_index = None                            # BruteForce lookup index
+    retrieval_index: Optional[FaissRetrievalIndex] = None
     articles_df: Optional[pd.DataFrame] = None       # Product metadata
     user_ids: Optional[list] = None                  # Known user IDs from training
 
@@ -262,30 +262,28 @@ async def lifespan(app: FastAPI):
     query_tower(tf.constant([next(iter(app_state.user_ids))]))
     candidate_tower(tf.constant([str(unique_article_ids[0])]))
 
-    query_tower.load_weights(str(query_weights_path))
-    candidate_tower.load_weights(str(candidate_weights_path))
+    query_tower.load_weights(str(query_weights_path), by_name=True, skip_mismatch=True)
+    candidate_tower.load_weights(str(candidate_weights_path), by_name=True, skip_mismatch=True)
     logger.info("Loaded trained query and candidate tower weights")
 
     # ------------------------------------------------------------------
-    # Step 5: Build the retrieval index (BruteForce)
+    # Step 5: Build the retrieval index (FAISS ANN)
     # ------------------------------------------------------------------
-    # TFRS BruteForce index pre-computes all candidate embeddings so
-    # recommendation lookups are fast at inference time.
-    #
-    # How it works:
-    #   1. candidate_tower encodes every product into an embedding vector
-    #   2. At query time, user embedding is compared to all product embeddings
-    #   3. Top-K most similar products are returned
+    # FAISS builds an ANN index over candidate embeddings for fast retrieval.
     logger.info("Building retrieval index (pre-computing candidate embeddings)...")
 
-    app_state.retrieval_index = tfrs.layers.factorized_top_k.BruteForce(
-        app_state.model.query_tower
-    )
-    app_state.retrieval_index.index_from_dataset(
-        candidate_ids_dataset.batch(128).map(
-            lambda ids: (ids, app_state.model.candidate_tower(ids))
+    try:
+        app_state.retrieval_index = FaissRetrievalIndex(
+            query_tower=app_state.model.query_tower,
+            candidate_tower=app_state.model.candidate_tower,
+            item_ids=sorted(unique_article_ids.astype(str).tolist()),
+            top_k=10,
         )
-    )
+    except ImportError as exc:
+        raise RuntimeError(
+            "FAISS is required for ANN retrieval but is not installed. "
+            "Install it with: pip install faiss-cpu"
+        ) from exc
     logger.info("Retrieval index built — API is ready to serve requests!")
 
     # ---- Hand control to FastAPI (requests are now handled) ----
@@ -401,18 +399,7 @@ def recommend(user_id: str, top_k: int = 10):
     #   2. retrieval_index finds the nearest product embeddings
     #   3. Returns (scores, product_ids) for the top K candidates
     try:
-        user_tensor = tf.constant([user_id])  # Model expects a batch dimension
-        scores, product_ids = app_state.retrieval_index(user_tensor, k=top_k)
-
-        # Remove batch dimension — we sent one user, we get one result
-        scores = scores.numpy()[0]          # shape: (top_k,)
-        product_ids = product_ids.numpy()[0]  # shape: (top_k,)
-
-        # Decode bytes → strings if needed (TF sometimes returns bytes)
-        product_ids = [
-            pid.decode("utf-8") if isinstance(pid, bytes) else str(pid)
-            for pid in product_ids
-        ]
+        scores, product_ids = app_state.retrieval_index.retrieve(user_id, top_k=top_k)
 
     except Exception as e:
         logger.error(f"Inference failed for user '{user_id}': {e}")

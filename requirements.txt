@@ -6,6 +6,7 @@ scikit-learn==1.4.1.post1
 # Machine Learning
 tensorflow==2.16.1
 tensorflow-recommenders==0.7.3
+faiss-cpu==1.8.0
 torch==2.2.1
 xgboost==2.0.3
 

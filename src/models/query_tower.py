@@ -75,7 +75,9 @@ class QueryTower(tf.keras.Model):
         # ── Layer 1: String → Integer ──────────────────────────────
         # StringLookup maps user_id strings to integer indices.
         # The vocabulary was built from all unique user IDs in the dataset.
+        # Match saved weight keys for stable weight loading.
         self.user_lookup = user_vocabulary
+        self.user_lookup._name = "user_lookup"
 
         # ── Layer 2: Integer → Dense Vector ───────────────────────
         # Embedding layer: a learnable lookup table.
@@ -85,7 +87,7 @@ class QueryTower(tf.keras.Model):
             input_dim=user_vocabulary.vocabulary_size(),
             output_dim=embedding_dim,
             embeddings_initializer="glorot_uniform",
-            name="user_embedding_weights",
+            name="user_embedding",
         )
 
         # ── Layer 3 (optional): Dense Transformation ────────────────

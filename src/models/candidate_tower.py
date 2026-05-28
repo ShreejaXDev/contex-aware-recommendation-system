@@ -78,7 +78,9 @@ class CandidateTower(tf.keras.Model):
 
         # ── Layer 1: String → Integer ──────────────────────────────
         # Same pattern as QueryTower: string ID → integer index
+        # Match saved weight keys for stable weight loading.
         self.item_lookup = item_vocabulary
+        self.item_lookup._name = "string_lookup"
 
         # ── Layer 2: Integer → Dense Vector ───────────────────────
         # Separate embedding matrix from the user embedding.
@@ -87,7 +89,7 @@ class CandidateTower(tf.keras.Model):
             input_dim=item_vocabulary.vocabulary_size(),
             output_dim=embedding_dim,
             embeddings_initializer="glorot_uniform",
-            name="item_embedding_weights",
+            name="embedding",
         )
 
         # ── Layer 3 (optional): Dense Transformation ────────────────

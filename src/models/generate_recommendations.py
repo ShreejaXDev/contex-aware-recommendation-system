@@ -6,7 +6,7 @@ Recommendation Generation using the trained Two-Tower Retrieval Model.
 WHAT DOES THIS SCRIPT DO?
     After training is complete, this script:
     1. Loads the trained model weights from disk
-    2. Rebuilds the retrieval index (BruteForce nearest-neighbor search)
+    2. Rebuilds the retrieval index (FAISS ANN nearest-neighbor search)
     3. Generates Top-K item recommendations for any user
     4. Outputs recommendations in a structured format (DataFrame / CSV)
 
@@ -43,7 +43,6 @@ from pathlib import Path
 
 import pandas as pd
 import tensorflow as tf
-import tensorflow_recommenders as tfrs
 
 # Import our custom modules
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -51,171 +50,15 @@ sys.path.append(str(PROJECT_ROOT))
 
 from query_tower     import build_query_tower
 from candidate_tower import build_candidate_tower
+from src.retrieval.faiss_index import FaissRetrievalIndex, compare_retrieval_performance
 
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 
 # ─────────────────────────────────────────────────────────────────────
-# RETRIEVAL INDEX CLASS
+# NOTE: Retrieval index uses FAISS ANN for fast vector search.
 # ─────────────────────────────────────────────────────────────────────
-
-class RetrievalIndex:
-    """
-    Wraps the trained Two-Tower model with a BruteForce retrieval index.
-
-    BruteForce search:
-    - Pre-computes all item embeddings once (offline)
-    - At query time: computes user embedding, scores against ALL items
-    - Returns Top-K items by highest dot-product score
-
-    Args:
-        query_tower     : Trained QueryTower instance
-        candidate_tower : Trained CandidateTower instance
-        item_ids        : List of all item ID strings
-        batch_size      : Batch size for indexing item embeddings
-        top_k           : Default number of recommendations to return
-    """
-
-    def __init__(
-        self,
-        query_tower,
-        candidate_tower,
-        item_ids: list,
-        batch_size: int = 128,
-        top_k: int = 10,
-    ):
-        self.query_tower     = query_tower
-        self.candidate_tower = candidate_tower
-        self.item_ids        = item_ids
-        self.top_k           = top_k
-        self._index = self._build_index(item_ids, batch_size, top_k)
-
-    def _build_index(
-        self,
-        item_ids: list,
-        batch_size: int,
-        top_k: int,
-    ) -> tfrs.layers.factorized_top_k.BruteForce:
-        """
-        Pre-compute all item embeddings and store in BruteForce index.
-
-        This step happens ONCE at initialization (offline).
-        Subsequent queries are fast because item embeddings are cached.
-
-        Args:
-            item_ids   : All item ID strings in the catalog
-            batch_size : Batch size for embedding computation
-            top_k      : Number of results to return per query
-
-        Returns:
-            BruteForce index with all item embeddings loaded.
-        """
-        print(f"⏳ Building retrieval index for {len(item_ids):,} items...")
-
-        # Create BruteForce index using the query tower as the user encoder
-        index = tfrs.layers.factorized_top_k.BruteForce(
-            query_model=self.query_tower,
-            k=top_k,
-        )
-
-        # Build dataset of (item_id_string, item_embedding) pairs
-        item_ids_ds = tf.data.Dataset.from_tensor_slices(
-            tf.constant(item_ids)
-        )
-
-        index.index_from_dataset(
-            tf.data.Dataset.zip((
-                item_ids_ds,
-                item_ids_ds.map(self.candidate_tower),
-            )).batch(batch_size)
-        )
-
-        print(f"✅ Retrieval index built ({len(item_ids):,} items indexed)")
-        return index
-    
-
-    def recommend(self, user_id: str, top_k: int = None) -> pd.DataFrame:
-        """
-        Generate Top-K recommendations for a single user.
-
-        Args:
-            user_id (str): The user ID to generate recommendations for.
-            top_k   (int): Number of recommendations. Defaults to self.top_k.
-
-        Returns:
-            pd.DataFrame: Recommendations with columns [user_id, item_id, score, rank]
-
-        Raises:
-            ValueError: If user_id is not in the model's vocabulary.
-        """
-        k = top_k or self.top_k
-
-        # Query the index
-        # BruteForce expects input shape (1,) — single user per query
-        user_tensor = tf.constant([user_id])
-        scores, item_ids = self._index(user_tensor, k=k)
-
-        # Convert from tensors to Python lists
-        recommended_item_ids = [
-            item_id.decode("utf-8") if isinstance(item_id, bytes) else item_id
-            for item_id in item_ids[0].numpy()
-        ]
-        recommendation_scores = scores[0].numpy().tolist()
-
-        # Build result DataFrame
-        result_df = pd.DataFrame({
-            "user_id" : user_id,
-            "item_id" : recommended_item_ids,
-            "score"   : recommendation_scores,
-            "rank"    : range(1, len(recommended_item_ids) + 1),
-        })
-
-        return result_df
-
-    def recommend_batch(
-        self,
-        user_ids: list,
-        top_k: int = None,
-    ) -> pd.DataFrame:
-        """
-        Generate recommendations for a list of users.
-
-        Loops over users and stacks results. For very large user bases,
-        this can be parallelized (multiprocessing / Spark / Beam).
-
-        Args:
-            user_ids (list of str): User IDs to generate recommendations for.
-            top_k    (int)        : Number of recommendations per user.
-
-        Returns:
-            pd.DataFrame: All recommendations stacked, columns [user_id, item_id, score, rank]
-        """
-        k = top_k or self.top_k
-        all_recs = []
-
-        print(f"⏳ Generating Top-{k} recommendations for {len(user_ids):,} users...")
-
-        for i, user_id in enumerate(user_ids):
-            try:
-                recs = self.recommend(user_id, top_k=k)
-                all_recs.append(recs)
-            except Exception as e:
-                # In production: log warning, skip user, don't crash
-                print(f"   ⚠️  Skipping user '{user_id}': {e}")
-
-            # Progress indicator every 100 users
-            if (i + 1) % 100 == 0:
-                print(f"   Processed {i + 1:,} / {len(user_ids):,} users...")
-
-        if not all_recs:
-            print("⚠️  No recommendations generated.")
-            return pd.DataFrame(columns=["user_id", "item_id", "score", "rank"])
-
-        result_df = pd.concat(all_recs, ignore_index=True)
-        print(f"✅ Done! Generated {len(result_df):,} recommendations.")
-
-        return result_df
 # ─────────────────────────────────────────────────────────────────────
 # DISPLAY UTILITIES
 # ─────────────────────────────────────────────────────────────────────
@@ -296,8 +139,8 @@ def load_trained_towers(
     query_tower(tf.constant([query_tower.user_lookup.get_vocabulary()[0]]))
     candidate_tower(tf.constant([candidate_tower.item_lookup.get_vocabulary()[0]]))
 
-    query_tower.load_weights(str(query_weights_path))
-    candidate_tower.load_weights(str(candidate_weights_path))
+    query_tower.load_weights(str(query_weights_path), by_name=True, skip_mismatch=True)
+    candidate_tower.load_weights(str(candidate_weights_path), by_name=True, skip_mismatch=True)
 
     print("   ✅ Loaded trained weights from saved_models/")
 
@@ -427,7 +270,11 @@ def parse_args() -> argparse.Namespace:
         default=32,
         help="Embedding dimension (must match trained model)",
     )
-
+    parser.add_argument(
+        "--compare_retrieval",
+        action="store_true",
+        help="Print BruteForce vs FAISS retrieval speed comparison",
+    )
     return parser.parse_args()
 
 
@@ -522,12 +369,27 @@ def main():
     )
 
     # ── Build retrieval index ─────────────────────────────────────
-    index = RetrievalIndex(
-        query_tower=query_tower,
-        candidate_tower=candidate_tower,
-        item_ids=all_item_ids,
-        top_k=args.top_k,
-    )
+    try:
+        index = FaissRetrievalIndex(
+            query_tower=query_tower,
+            candidate_tower=candidate_tower,
+            item_ids=all_item_ids,
+            top_k=args.top_k,
+        )
+    except ImportError as exc:
+        raise SystemExit(
+            "FAISS is not installed. Install it with: pip install faiss-cpu"
+        ) from exc
+
+    if args.compare_retrieval:
+        comparison = compare_retrieval_performance(
+            query_tower=query_tower,
+            candidate_tower=candidate_tower,
+            item_ids=all_item_ids,
+            user_ids=all_user_ids,
+            top_k=args.top_k,
+        )
+        print(comparison)
 
     # ── Generate recommendations ──────────────────────────────────
     if args.batch_mode:
