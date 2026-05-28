@@ -1,13 +1,13 @@
 # Context-Aware Recommendation System
 
 
-A production-grade machine learning recommendation system that leverages context-aware algorithms and Redis caching for efficient real-time recommendations.
+A production-grade machine learning recommendation system that leverages context-aware algorithms, FAISS ANN retrieval, and lightweight caching for efficient real-time recommendations.
 
 ## Features
 
 - **Context-Aware Recommendations**: Generates recommendations based on user context and item features
-- **BruteForce Retrieval**: TensorFlow Recommenders BruteForce top-k retrieval
-- **Redis Caching**: High-performance caching for frequently accessed recommendations
+- **FAISS ANN Retrieval**: Fast approximate nearest-neighbor search over embeddings
+- **Lightweight Caching**: fakeredis-based cache for faster repeat requests
 - **REST API**: FastAPI-based API for serving recommendations
 - **Apache Airflow**: Orchestrated data pipelines for model training and evaluation
 - **Scalable Architecture**: Designed for production deployment
@@ -27,12 +27,12 @@ contex-aware-recommendation-system/
 ├── notebooks/                # Jupyter notebooks for exploration
 ├── saved_models/             # Saved model weights and configs
 ├── src/
-│   ├── api/                  # FastAPI application
+│   ├── api/                  # FastAPI application + cache layer
 │   ├── evaluation/           # Model evaluation scripts
 │   ├── feature_engineering/  # Feature extraction and engineering
 │   ├── models/               # Model definitions and inference
 │   ├── preprocessing/        # Data preprocessing modules
-│   ├── redis_cache/          # Redis caching utilities
+│   ├── retrieval/            # FAISS ANN retrieval utilities
 │   └── training/             # Model training scripts
 ├── tests/                    # Unit and integration tests
 ├── requirements.txt          # Python dependencies
@@ -44,7 +44,6 @@ contex-aware-recommendation-system/
 
 ### Prerequisites
 - Python 3.10+
-- Redis (for caching)
 - MongoDB/PostgreSQL (for data storage)
 
 ### Setup
@@ -152,6 +151,11 @@ Use this if you want to generate recommendation outputs after training:
 python src/models/generate_recommendations.py
 ```
 
+### Compare Retrieval Speed (BruteForce vs FAISS)
+```bash
+python src/models/generate_recommendations.py --user_id <USER_ID> --top_k 10 --compare_retrieval
+```
+
 ### Run Data Pipeline
 ```bash
 python -m airflow webserver
@@ -169,9 +173,19 @@ Configuration is managed through environment variables. See `.env.example` for d
 
 ## API Endpoints
 
-- `POST /recommend` - Get recommendations for a user
-- `GET /health` - Health check
-- `POST /cache/clear` - Clear recommendation cache
+- `GET /` - Health check
+- `GET /recommend/{user_id}` - Get recommendations for a user
+
+## Caching (fakeredis)
+
+The API uses a lightweight fakeredis cache to speed up repeat requests.
+Cache keys follow the format:
+
+```
+recommendations:{user_id}:top{top_k}
+```
+
+Cached responses expire automatically (default: 1 hour) so recommendations refresh periodically.
 
 
 
