@@ -46,5 +46,3 @@ Personalized Product Recommendations
 ### 5. Backend API
 - FastAPI recommendation endpoints
 
-### 6. Pipeline Automation
-- Airflow DAGs for retraining

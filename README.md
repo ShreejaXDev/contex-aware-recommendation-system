@@ -9,14 +9,12 @@ A production-grade machine learning recommendation system that leverages context
 - **FAISS ANN Retrieval**: Fast approximate nearest-neighbor search over embeddings
 - **Lightweight Caching**: fakeredis-based cache for faster repeat requests
 - **REST API**: FastAPI-based API for serving recommendations
-- **Apache Airflow**: Orchestrated data pipelines for model training and evaluation
 - **Scalable Architecture**: Designed for production deployment
 
 ## Project Structure
 
 ```
 contex-aware-recommendation-system/
-├── airflow/                 # Airflow DAG definitions
 ├── data/
 │   ├── raw/                  # Raw input data
 │   ├── processed/            # Processed/cleaned data
@@ -154,12 +152,6 @@ python src/models/generate_recommendations.py
 ### Compare Retrieval Speed (BruteForce vs FAISS)
 ```bash
 python src/models/generate_recommendations.py --user_id <USER_ID> --top_k 10 --compare_retrieval
-```
-
-### Run Data Pipeline
-```bash
-python -m airflow webserver
-python -m airflow scheduler
 ```
 
 ### Run Tests

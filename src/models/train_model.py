@@ -16,7 +16,7 @@ WHY HAVE A SEPARATE TRAINING SCRIPT?
     but production ML teams use separate scripts for:
 
     ✅ Reproducibility  — Run the same training with one command
-    ✅ Automation       — Schedule via cron, Airflow, GitHub Actions
+    ✅ Automation       — Schedule via cron or GitHub Actions
     ✅ CI/CD            — Run training as part of deployment pipelines
     ✅ Logging          — Capture metrics to MLflow, W&B, or CSV files
     ✅ Parameterization — Change hyperparams via CLI or config file
